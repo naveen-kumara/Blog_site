@@ -14,21 +14,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 
 
-'''
-Make sure the required packages are installed: 
-Open the Terminal in PyCharm (bottom left). 
-
-On Windows type:
-python -m pip install -r requirements.txt
-
-On MacOS type:
-pip3 install -r requirements.txt
-
-This will install the packages from the requirements.txt for this project.
-'''
-
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = os.environ.get("FLASK_KEY")
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 
@@ -36,7 +23,7 @@ MAIL_KEY = os.environ.get("MAIL_KEY")
 PASSWORD = os.environ.get("PASSWORD")
 TO_MAIL_KEY = os.environ.get("TO_MAIL_KEY")
 
-# TODO: Configure Flask-Login
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -47,7 +34,7 @@ def load_user(user_id):
 # CREATE DATABASE
 class Base(DeclarativeBase):
     pass
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///posts.db")
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
@@ -130,7 +117,7 @@ def register():
     return render_template("register.html",form=reg_form,logged_in=current_user.is_authenticated)
 
 
-# TODO: Retrieve a user from the database based on their email. 
+
 @app.route('/login',methods=["POST","GET"])
 def login():
     log_form = LoginForm()
@@ -165,7 +152,6 @@ def get_all_posts():
     return render_template("index.html", all_posts=posts,logged_in=current_user.is_authenticated)
 
 
-# TODO: Allow logged-in users to comment on posts
 @app.route("/post/<int:post_id>",methods=["POST","GET"])
 def show_post(post_id):
     requested_post = db.get_or_404(BlogPost, post_id)
@@ -192,7 +178,6 @@ def admin_only(func):
         return func(*args, **kwargs)
     return wrapped_function
 
-# TODO: Use a decorator so only an admin user can create a new post
 @app.route("/new-post", methods=["GET", "POST"])
 @admin_only
 def add_new_post():
@@ -212,7 +197,7 @@ def add_new_post():
     return render_template("make-post.html", form=form,logged_in=current_user.is_authenticated)
 
 
-# TODO: Use a decorator so only an admin user can edit a post
+
 @app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
 @admin_only
 def edit_post(post_id):
@@ -235,7 +220,6 @@ def edit_post(post_id):
     return render_template("make-post.html", form=edit_form, is_edit=True,logged_in=current_user.is_authenticated)
 
 
-# TODO: Use a decorator so only an admin user can delete a post
 @app.route("/delete/<int:post_id>")
 @admin_only
 def delete_post(post_id):
@@ -257,6 +241,7 @@ def contact():
         send_mail(data["name"], data["email"], data["phone"], data["message"])
     return render_template("contact.html",logged_in=current_user.is_authenticated)
 
+
 def send_mail(name,email,phone,message):
     email_message = f"Subject:New Message\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage: {message}"
     with smtplib.SMTP("smtp.gmail.com") as connection:
@@ -266,4 +251,4 @@ def send_mail(name,email,phone,message):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5002)
+    app.run(debug=False)
